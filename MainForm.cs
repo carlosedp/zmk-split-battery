@@ -63,9 +63,9 @@ namespace ZMKSplit
         private void MainForm_Load(object sender, EventArgs e)
         {
             UpdateTrayIcon();
-            
+
             Microsoft.Win32.SystemEvents.UserPreferenceChanged += new Microsoft.Win32.UserPreferenceChangedEventHandler(PreferenceChangedHandler);
-            
+
             StatusLabel.Text = STATUS_READY;
             ConnectButton.Text = CONNECT_BUTTON_CONNECT;
             ReloadButton.Text = RELOAD_BUTTON_STATE_READY;
@@ -78,7 +78,7 @@ namespace ZMKSplit
             {
                 // make sure a toast notification will pop up once we connect to the device
                 _lastMinLevel = 100;
-                
+
                 BeginInvoke(new Action(() =>
                 {
                     Hide();
@@ -100,7 +100,7 @@ namespace ZMKSplit
                 ListBLEDevices();
             }
         }
-        
+
         private void ParseCommandLineArguments()
         {
             // parse -deviceid and -devicename
@@ -143,7 +143,11 @@ namespace ZMKSplit
 
         public void OnBatteryLevelChanged()
         {
-            BeginInvoke(new Action(() => UpdateTrayIcon()));
+            BeginInvoke(new Action(() =>
+            {
+                UpdateTrayIcon();
+                UpdateDeviceListBatteryValues();
+            }));
         }
 
         private async Task<bool> ConnectToDevice(string deviceName, string deviceID)
@@ -176,6 +180,7 @@ namespace ZMKSplit
                     _deviceName = deviceName;
                     _deviceID = deviceID;
                     StatusLabel.Text = string.Format(STATUS_CONNECTED, _deviceName);
+                    UpdateDeviceListBatteryColumns();
                     UpdateTrayIcon();
                     PollingTimer.Interval = (int)RefreshIntervalNumericUpDown.Value * 60 * 1000;
                     PollingTimer.Start();
@@ -194,7 +199,7 @@ namespace ZMKSplit
         {
             if (DevicesListView.SelectedItems.Count == 0)
                 return false;
-            
+
             string deviceName = DevicesListView.SelectedItems[0].Text;
             string? deviceID = (string?)DevicesListView.SelectedItems[0].Tag;
 
@@ -210,6 +215,7 @@ namespace ZMKSplit
             _deviceName = "";
             _deviceID = "";
             StatusLabel.Text = STATUS_READY;
+            RemoveDeviceListBatteryColumns();
             UpdateTrayIcon();
         }
 
@@ -233,7 +239,7 @@ namespace ZMKSplit
         {
             var keyPath = "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run";
             var keyOpt =  Registry.CurrentUser.OpenSubKey(keyPath, true);
-            
+
             if (keyOpt is RegistryKey key)
             {
                 if (enabled)
@@ -310,7 +316,7 @@ namespace ZMKSplit
             object obj = ZMKSplit.Properties.Resources.ResourceManager.GetObject(iconName, ZMKSplit.Properties.Resources.Culture)!;
             return ((Icon)(obj));
         }
-        
+
         public void UpdateTrayIcon()
         {
             int minLevel = 100;
@@ -356,7 +362,7 @@ namespace ZMKSplit
                 ConnectButton_Click(sender, e);
             }
         }
-        
+
         private async void ConnectButton_Click(object sender, EventArgs e)
         {
             ConnectButton.Enabled = false;
@@ -399,7 +405,94 @@ namespace ZMKSplit
                 return;
             bool success = await _batteryMonitor.RefreshBatteryLevels();
             if (success)
+            {
                 UpdateTrayIcon();
+                UpdateDeviceListBatteryValues();
+            }
+        }
+
+        /// <summary>
+        /// Adds/replaces battery columns in the list view to match the currently connected device's batteries.
+        /// Should be called right after a successful connection.
+        /// </summary>
+        private void UpdateDeviceListBatteryColumns()
+        {
+            DevicesListView.BeginUpdate();
+
+            // Remove any existing battery columns (keep only column 0 = Name)
+            while (DevicesListView.Columns.Count > 1)
+                DevicesListView.Columns.RemoveAt(1);
+
+            var batteries = _batteryMonitor.Batteries;
+            int batteryColWidth = batteries.Count > 0 ? 80 : 0;
+            // Shrink Name column to make room
+            NameColumn.Width = DevicesListView.ClientSize.Width - batteryColWidth * batteries.Count - 4;
+
+            foreach (var battery in batteries.Values)
+            {
+                var col = new ColumnHeader
+                {
+                    Text = battery.Name,
+                    Width = batteryColWidth,
+                    TextAlign = HorizontalAlignment.Right,
+                };
+                DevicesListView.Columns.Add(col);
+            }
+
+            DevicesListView.EndUpdate();
+            UpdateDeviceListBatteryValues();
+        }
+
+        /// <summary>
+        /// Updates the subitems of the connected device's row with current battery percentages.
+        /// </summary>
+        private void UpdateDeviceListBatteryValues()
+        {
+            if (!_batteryMonitor.IsConnected())
+                return;
+
+            // Find the list view item that matches the connected device
+            ListViewItem? item = null;
+            foreach (ListViewItem lvi in DevicesListView.Items)
+            {
+                if ((string?)lvi.Tag == _deviceID)
+                {
+                    item = lvi;
+                    break;
+                }
+            }
+            if (item == null)
+                return;
+
+            var batteries = _batteryMonitor.Batteries.Values.ToList();
+            DevicesListView.BeginUpdate();
+
+            // Ensure enough subitems exist (index 0 is the item itself = Name)
+            while (item.SubItems.Count - 1 < batteries.Count)
+                item.SubItems.Add("");
+
+            for (int i = 0; i < batteries.Count; i++)
+            {
+                string text = batteries[i].Level >= 0 ? $"{batteries[i].Level}%" : "--";
+                item.SubItems[i + 1].Text = text;
+            }
+
+            DevicesListView.EndUpdate();
+        }
+
+        /// <summary>
+        /// Removes battery columns and subitems, restoring the list to Name-only.
+        /// </summary>
+        private void RemoveDeviceListBatteryColumns()
+        {
+            DevicesListView.BeginUpdate();
+            while (DevicesListView.Columns.Count > 1)
+                DevicesListView.Columns.RemoveAt(1);
+            NameColumn.Width = DevicesListView.ClientSize.Width - 4;
+            foreach (ListViewItem lvi in DevicesListView.Items)
+                while (lvi.SubItems.Count > 1)
+                    lvi.SubItems.RemoveAt(1);
+            DevicesListView.EndUpdate();
         }
 
         private void RefreshIntervalNumericUpDown_ValueChanged(object sender, EventArgs e)
@@ -433,10 +526,10 @@ namespace ZMKSplit
             if (--_reconnectCounter == 0)
             {
                 ReconnectTimer.Stop();
-                
+
                 Debug.Assert(_deviceID.Length > 0);
                 Debug.Assert(_deviceName.Length > 0);
-                
+
                 bool res = await ConnectToDevice(_deviceName, _deviceID);
                 if (!res)
                 {

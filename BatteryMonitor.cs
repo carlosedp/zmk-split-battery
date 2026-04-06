@@ -93,7 +93,7 @@ namespace ZMKSplit
             _batteryLevelChangedCb = levelCb;
             _deviceNeedsReconnectCb = reconnectCb;
         }
-        
+
         public static void ListPairedDevices(ListDevicesCallback cb, ListDevicesCompletionCallback completionCB)
         {
             string aqsFilter = "(System.Devices.Aep.ProtocolId:=\"{bb7bb05e-5972-42b5-94fc-76eaa7084d49}\")";
@@ -122,11 +122,11 @@ namespace ZMKSplit
             };
             watcher.Start();
         }
-        
+
         public async Task<ConnectResult> Connect(string deviceName, string deviceID)
         {
             Disconnect();
-            
+
             try
             {
                 var dev = await BluetoothLEDevice.FromIdAsync(deviceID);
@@ -136,7 +136,7 @@ namespace ZMKSplit
                 }
 
                 dev.ConnectionStatusChanged += OnBLEConnectionStatusChanged;
-                
+
                 var gattServices = await dev.GetGattServicesForUuidAsync(BATTERY_UUID, BluetoothCacheMode.Uncached).AsTask();
                 if (gattServices == null)
                 {

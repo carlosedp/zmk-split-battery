@@ -50,11 +50,11 @@
             this.StatusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.RefreshIntervalNumericUpDown)).BeginInit();
             this.SuspendLayout();
-            // 
+            //
             // DevicesListView
-            // 
-            this.DevicesListView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
+            //
+            this.DevicesListView.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+            | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.DevicesListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
             this.NameColumn});
@@ -71,43 +71,43 @@
             this.DevicesListView.UseCompatibleStateImageBehavior = false;
             this.DevicesListView.View = System.Windows.Forms.View.Details;
             this.DevicesListView.DoubleClick += new System.EventHandler(this.DevicesListView_DoubleClick);
-            // 
+            //
             // NameColumn
-            // 
+            //
             this.NameColumn.Text = "Name";
             this.NameColumn.Width = 378;
-            // 
+            //
             // NotifyIcon
-            // 
+            //
             this.NotifyIcon.ContextMenuStrip = this.TrayContextMenu;
             this.NotifyIcon.Visible = true;
             this.NotifyIcon.MouseDoubleClick += new System.Windows.Forms.MouseEventHandler(this.NotifyIcon_MouseDoubleClick);
-            // 
+            //
             // TrayContextMenu
-            // 
+            //
             this.TrayContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.showContextMenuItem,
             this.exitContextMenuItem});
             this.TrayContextMenu.Name = "trayContextMenu";
             this.TrayContextMenu.Size = new System.Drawing.Size(104, 48);
-            // 
+            //
             // showContextMenuItem
-            // 
+            //
             this.showContextMenuItem.Name = "showContextMenuItem";
             this.showContextMenuItem.Size = new System.Drawing.Size(103, 22);
             this.showContextMenuItem.Text = "Show";
             this.showContextMenuItem.Click += new System.EventHandler(this.ShowContextMenuItem_Click);
-            // 
+            //
             // exitContextMenuItem
-            // 
+            //
             this.exitContextMenuItem.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
             this.exitContextMenuItem.Name = "exitContextMenuItem";
             this.exitContextMenuItem.Size = new System.Drawing.Size(103, 22);
             this.exitContextMenuItem.Text = "E&xit";
             this.exitContextMenuItem.Click += new System.EventHandler(this.ExitContextMenuItem_Click);
-            // 
+            //
             // ReloadButton
-            // 
+            //
             this.ReloadButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.ReloadButton.FlatStyle = System.Windows.Forms.FlatStyle.System;
             this.ReloadButton.Location = new System.Drawing.Point(407, 12);
@@ -117,9 +117,9 @@
             this.ReloadButton.Text = "Refresh";
             this.ReloadButton.UseVisualStyleBackColor = true;
             this.ReloadButton.MouseClick += new System.Windows.Forms.MouseEventHandler(this.ReloadButton_MouseClick);
-            // 
+            //
             // StatusStrip1
-            // 
+            //
             this.StatusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.StatusLabel});
             this.StatusStrip1.Location = new System.Drawing.Point(0, 384);
@@ -127,15 +127,15 @@
             this.StatusStrip1.Size = new System.Drawing.Size(577, 22);
             this.StatusStrip1.TabIndex = 4;
             this.StatusStrip1.Text = "statusStrip1";
-            // 
+            //
             // StatusLabel
-            // 
+            //
             this.StatusLabel.Name = "StatusLabel";
             this.StatusLabel.Size = new System.Drawing.Size(39, 17);
             this.StatusLabel.Text = "Ready";
-            // 
+            //
             // ConnectButton
-            // 
+            //
             this.ConnectButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.ConnectButton.FlatStyle = System.Windows.Forms.FlatStyle.System;
             this.ConnectButton.Location = new System.Drawing.Point(407, 50);
@@ -145,19 +145,19 @@
             this.ConnectButton.Text = "Connect";
             this.ConnectButton.UseVisualStyleBackColor = true;
             this.ConnectButton.Click += new System.EventHandler(this.ConnectButton_Click);
-            // 
+            //
             // ReconnectTimer
-            // 
+            //
             this.ReconnectTimer.Interval = 1000;
             this.ReconnectTimer.Tick += new System.EventHandler(this.ReconnectTimer_Tick);
-            // 
+            //
             // PollingTimer
-            // 
+            //
             this.PollingTimer.Interval = 300000;
             this.PollingTimer.Tick += new System.EventHandler(this.PollingTimer_Tick);
-            // 
+            //
             // AutoRunCheckBox
-            // 
+            //
             this.AutoRunCheckBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.AutoRunCheckBox.AutoSize = true;
             this.AutoRunCheckBox.Location = new System.Drawing.Point(408, 88);
@@ -167,9 +167,9 @@
             this.AutoRunCheckBox.Text = "Run at Windows startup";
             this.AutoRunCheckBox.UseVisualStyleBackColor = true;
             this.AutoRunCheckBox.CheckedChanged += new System.EventHandler(this.AutoRunCheckBox_CheckedChanged);
-            // 
+            //
             // RefreshIntervalLabel
-            // 
+            //
             this.RefreshIntervalLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.RefreshIntervalLabel.AutoSize = true;
             this.RefreshIntervalLabel.Location = new System.Drawing.Point(408, 118);
@@ -177,9 +177,9 @@
             this.RefreshIntervalLabel.Size = new System.Drawing.Size(120, 15);
             this.RefreshIntervalLabel.TabIndex = 7;
             this.RefreshIntervalLabel.Text = "Refresh every (min):";
-            // 
+            //
             // RefreshIntervalNumericUpDown
-            // 
+            //
             this.RefreshIntervalNumericUpDown.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.RefreshIntervalNumericUpDown.Location = new System.Drawing.Point(408, 138);
             this.RefreshIntervalNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
@@ -189,9 +189,9 @@
             this.RefreshIntervalNumericUpDown.Size = new System.Drawing.Size(158, 23);
             this.RefreshIntervalNumericUpDown.TabIndex = 8;
             this.RefreshIntervalNumericUpDown.ValueChanged += new System.EventHandler(this.RefreshIntervalNumericUpDown_ValueChanged);
-            // 
+            //
             // StartMinimizedCheckBox
-            // 
+            //
             this.StartMinimizedCheckBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.StartMinimizedCheckBox.AutoSize = true;
             this.StartMinimizedCheckBox.Location = new System.Drawing.Point(408, 172);
@@ -201,9 +201,9 @@
             this.StartMinimizedCheckBox.Text = "Start minimized to tray";
             this.StartMinimizedCheckBox.UseVisualStyleBackColor = true;
             this.StartMinimizedCheckBox.CheckedChanged += new System.EventHandler(this.StartMinimizedCheckBox_CheckedChanged);
-            // 
+            //
             // MainForm
-            // 
+            //
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(577, 406);
