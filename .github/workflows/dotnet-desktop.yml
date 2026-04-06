@@ -42,12 +42,16 @@ jobs:
       # Sign the executable with a self-signed certificate (requires SIGNING_CERT_PFX_BASE64 and
       # SIGNING_CERT_PASSWORD secrets). Step is skipped silently when secrets are not configured.
       - name: Sign executable
-        if: ${{ secrets.SIGNING_CERT_PFX_BASE64 != '' }}
         shell: powershell
         env:
           PFX_BASE64: ${{ secrets.SIGNING_CERT_PFX_BASE64 }}
           PFX_PASSWORD: ${{ secrets.SIGNING_CERT_PASSWORD }}
         run: |
+          if ([string]::IsNullOrEmpty($env:PFX_BASE64)) {
+            Write-Host "No signing certificate configured, skipping."
+            exit 0
+          }
+
           $pfxPath = [System.IO.Path]::Combine($env:RUNNER_TEMP, "signing.pfx")
           [IO.File]::WriteAllBytes($pfxPath, [Convert]::FromBase64String($env:PFX_BASE64))
 
