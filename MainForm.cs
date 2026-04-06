@@ -1,17 +1,12 @@
 ﻿using Microsoft.Win32;
 using System;
-using System.Collections.Concurrent;
-using System.Configuration;
-using System.Data;
+using System.ComponentModel;
 using System.Drawing;
-using System.IO;
-using System.Security.Cryptography.Xml;
+using System.Text;
 using System.Threading.Tasks;
-using System.Threading;
 using System.Windows.Forms;
 using System.Collections.Generic;
 using System.Linq;
-using Windows.Storage.Streams;
 using System.Diagnostics;
 using static ZMKSplit.BatteryMonitor;
 using Microsoft.Toolkit.Uwp.Notifications;
@@ -51,6 +46,7 @@ namespace ZMKSplit
         private string _deviceID = "";
         private int _lastMinLevel = -1;
         private int _reconnectCounter = RECONNECT_INTERVAL;
+        private bool _isReconnecting = false;
 
         public MainForm()
         {
@@ -184,6 +180,14 @@ namespace ZMKSplit
                     UpdateTrayIcon();
                     PollingTimer.Interval = (int)RefreshIntervalNumericUpDown.Value * 60 * 1000;
                     PollingTimer.Start();
+                    if (_isReconnecting)
+                    {
+                        _isReconnecting = false;
+                        new ToastContentBuilder()
+                            .AddText("Keyboard reconnected")
+                            .AddText(String.Format("{0} is back online.", _deviceName))
+                            .Show();
+                    }
                     if (AutoRunCheckBox.Checked)
                     {
                         // refresh credentials stored in registry
@@ -320,25 +324,29 @@ namespace ZMKSplit
         public void UpdateTrayIcon()
         {
             int minLevel = 100;
+            string tooltipText;
             if (!_batteryMonitor.IsConnected() || _batteryMonitor.Batteries.Count == 0)
             {
                 minLevel = -1;
-                NotifyIcon.Text = BATTERY_NOT_CONNECTED_TITLE;
+                tooltipText = BATTERY_NOT_CONNECTED_TITLE;
             }
             else if (_batteryMonitor.Batteries.Count == 1)
             {
                 minLevel = _batteryMonitor.Batteries.First().Value.Level;
-                NotifyIcon.Text = String.Format("{0}: {1}%", _deviceName, minLevel);
+                tooltipText = String.Format("{0}: {1}%", _deviceName, minLevel);
             }
             else
             {
-                NotifyIcon.Text = _deviceName + "\n";
+                var sb = new StringBuilder(_deviceName);
                 foreach (var battery in _batteryMonitor.Batteries.Values)
                 {
-                    NotifyIcon.Text += battery.Name + ": " + battery.Level + "%\n";
+                    sb.Append($"\n{battery.Name}: {battery.Level}%");
                     minLevel = Math.Min(minLevel, battery.Level);
                 }
+                tooltipText = sb.ToString();
             }
+            // Windows tray tooltip is capped at 63 characters
+            NotifyIcon.Text = tooltipText.Length > 63 ? tooltipText.Substring(0, 63) : tooltipText;
             NotifyIcon.Icon = GetBatteryIcon(minLevel);
             if (_lastMinLevel > BATTERY_LOW_LEVEL_THRESHOLD && minLevel != -1 && minLevel <= BATTERY_LOW_LEVEL_THRESHOLD)
             {
@@ -348,6 +356,8 @@ namespace ZMKSplit
                     .Show();
             }
             _lastMinLevel = minLevel;
+            if (minLevel != -1)
+                LastUpdatedLabel.Text = "Updated: " + DateTime.Now.ToString("HH:mm:ss");
         }
 
         private void ReloadButton_MouseClick(object sender, MouseEventArgs e)
@@ -388,6 +398,7 @@ namespace ZMKSplit
             // (e.g. keyboard switched to USB charging mode).
             BeginInvoke(new Action(() =>
             {
+                _isReconnecting = true;
                 PollingTimer.Stop();
                 UpdateTrayIcon(); // now shows disconnected
                 if (_deviceID.Length > 0 && _deviceName.Length > 0)
@@ -498,6 +509,31 @@ namespace ZMKSplit
         private void RefreshIntervalNumericUpDown_ValueChanged(object sender, EventArgs e)
         {
             PollingTimer.Interval = (int)RefreshIntervalNumericUpDown.Value * 60 * 1000;
+        }
+
+        private async void RefreshNowContextMenuItem_Click(object sender, EventArgs e)
+        {
+            bool success = await _batteryMonitor.RefreshBatteryLevels();
+            if (success)
+            {
+                UpdateTrayIcon();
+                UpdateDeviceListBatteryValues();
+            }
+        }
+
+        private void DisconnectContextMenuItem_Click(object sender, EventArgs e)
+        {
+            ReconnectTimer.Stop();
+            _isReconnecting = false;
+            DisconnectFromSelectedDevice();
+            ConnectButton.Text = CONNECT_BUTTON_CONNECT;
+        }
+
+        private void TrayContextMenu_Opening(object sender, CancelEventArgs e)
+        {
+            bool connected = _batteryMonitor.IsConnected();
+            refreshNowContextMenuItem.Enabled = connected;
+            disconnectContextMenuItem.Enabled = connected;
         }
 
         private void ExitContextMenuItem_Click(object sender, EventArgs e)

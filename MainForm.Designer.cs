@@ -35,10 +35,13 @@
             this.NotifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
             this.TrayContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.showContextMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.refreshNowContextMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.disconnectContextMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitContextMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.ReloadButton = new System.Windows.Forms.Button();
             this.StatusStrip1 = new System.Windows.Forms.StatusStrip();
             this.StatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.LastUpdatedLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.ConnectButton = new System.Windows.Forms.Button();
             this.ReconnectTimer = new System.Windows.Forms.Timer(this.components);
             this.PollingTimer = new System.Windows.Forms.Timer(this.components);
@@ -87,9 +90,12 @@
             //
             this.TrayContextMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.showContextMenuItem,
+            this.refreshNowContextMenuItem,
+            this.disconnectContextMenuItem,
             this.exitContextMenuItem});
             this.TrayContextMenu.Name = "trayContextMenu";
-            this.TrayContextMenu.Size = new System.Drawing.Size(104, 48);
+            this.TrayContextMenu.Size = new System.Drawing.Size(153, 92);
+            this.TrayContextMenu.Opening += new System.ComponentModel.CancelEventHandler(this.TrayContextMenu_Opening);
             //
             // showContextMenuItem
             //
@@ -97,6 +103,20 @@
             this.showContextMenuItem.Size = new System.Drawing.Size(103, 22);
             this.showContextMenuItem.Text = "Show";
             this.showContextMenuItem.Click += new System.EventHandler(this.ShowContextMenuItem_Click);
+            //
+            // refreshNowContextMenuItem
+            //
+            this.refreshNowContextMenuItem.Name = "refreshNowContextMenuItem";
+            this.refreshNowContextMenuItem.Size = new System.Drawing.Size(153, 22);
+            this.refreshNowContextMenuItem.Text = "Refresh Now";
+            this.refreshNowContextMenuItem.Click += new System.EventHandler(this.RefreshNowContextMenuItem_Click);
+            //
+            // disconnectContextMenuItem
+            //
+            this.disconnectContextMenuItem.Name = "disconnectContextMenuItem";
+            this.disconnectContextMenuItem.Size = new System.Drawing.Size(153, 22);
+            this.disconnectContextMenuItem.Text = "Disconnect";
+            this.disconnectContextMenuItem.Click += new System.EventHandler(this.DisconnectContextMenuItem_Click);
             //
             // exitContextMenuItem
             //
@@ -121,7 +141,8 @@
             // StatusStrip1
             //
             this.StatusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.StatusLabel});
+            this.StatusLabel,
+            this.LastUpdatedLabel});
             this.StatusStrip1.Location = new System.Drawing.Point(0, 384);
             this.StatusStrip1.Name = "StatusStrip1";
             this.StatusStrip1.Size = new System.Drawing.Size(577, 22);
@@ -132,7 +153,15 @@
             //
             this.StatusLabel.Name = "StatusLabel";
             this.StatusLabel.Size = new System.Drawing.Size(39, 17);
+            this.StatusLabel.Spring = true;
             this.StatusLabel.Text = "Ready";
+            //
+            // LastUpdatedLabel
+            //
+            this.LastUpdatedLabel.Name = "LastUpdatedLabel";
+            this.LastUpdatedLabel.Size = new System.Drawing.Size(130, 17);
+            this.LastUpdatedLabel.Text = "";
+            this.LastUpdatedLabel.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             //
             // ConnectButton
             //
@@ -237,10 +266,13 @@
         private System.Windows.Forms.ColumnHeader NameColumn;
         private System.Windows.Forms.StatusStrip StatusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel StatusLabel;
+        private System.Windows.Forms.ToolStripStatusLabel LastUpdatedLabel;
         private System.Windows.Forms.Button ConnectButton;
         private System.Windows.Forms.ContextMenuStrip TrayContextMenu;
         private System.Windows.Forms.ToolStripMenuItem exitContextMenuItem;
         private System.Windows.Forms.ToolStripMenuItem showContextMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem refreshNowContextMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem disconnectContextMenuItem;
         private System.Windows.Forms.Timer ReconnectTimer;
         private System.Windows.Forms.Timer PollingTimer;
         private System.Windows.Forms.CheckBox AutoRunCheckBox;

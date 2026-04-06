@@ -153,6 +153,10 @@ namespace ZMKSplit
                     {
                         _batteries[gc.AttributeHandle] = new BatteryStatus { Name = GetBatteryNameFromGC(gc), Level = -1 };
                         gc.ValueChanged += OnGattValueChanged;
+                        // Tell the device to push unsolicited battery level notifications.
+                        // Ignore failure — polling covers devices that don't support Notify.
+                        await gc.WriteClientCharacteristicConfigurationDescriptorAsync(
+                            GattClientCharacteristicConfigurationDescriptorValue.Notify);
                         allCharacteristics.Add(gc);
                     }
                 }
