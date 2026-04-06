@@ -18,6 +18,7 @@ namespace ZMKSplit
         public delegate void ListDevicesCallback(string deviceName, string deviceID);
         public delegate void ListDevicesCompletionCallback();
         public delegate void BatteryLevelChangedCallback();
+        public delegate void DeviceNeedsReconnectCallback();
 
         public struct BatteryStatus
         {
@@ -85,10 +86,12 @@ namespace ZMKSplit
         private Dictionary<ushort, BatteryStatus> _batteries = new();
         private BLEDevice? _bleDevice;
         private readonly BatteryLevelChangedCallback _batteryLevelChangedCb;
+        private readonly DeviceNeedsReconnectCallback _deviceNeedsReconnectCb;
 
-        public BatteryMonitor(BatteryLevelChangedCallback cb)
+        public BatteryMonitor(BatteryLevelChangedCallback levelCb, DeviceNeedsReconnectCallback reconnectCb)
         {
-            _batteryLevelChangedCb = cb;
+            _batteryLevelChangedCb = levelCb;
+            _deviceNeedsReconnectCb = reconnectCb;
         }
         
         public static void ListPairedDevices(ListDevicesCallback cb, ListDevicesCompletionCallback completionCB)
@@ -131,6 +134,8 @@ namespace ZMKSplit
                 {
                     return new ConnectResult { Status = ConnectStatus.DeviceNotFound, ErrorMessage = "Device not found or not available" };
                 }
+
+                dev.ConnectionStatusChanged += OnBLEConnectionStatusChanged;
                 
                 var gattServices = await dev.GetGattServicesForUuidAsync(BATTERY_UUID, BluetoothCacheMode.Uncached).AsTask();
                 if (gattServices == null)
@@ -188,6 +193,7 @@ namespace ZMKSplit
                 {
                     gc.ValueChanged -= OnGattValueChanged;
                 }
+                _bleDevice.Device.ConnectionStatusChanged -= OnBLEConnectionStatusChanged;
                 _bleDevice.Device.Dispose();
                 _bleDevice = null;
             }
@@ -195,7 +201,45 @@ namespace ZMKSplit
 
         public bool IsConnected()
         {
-            return _bleDevice != null;
+            return _bleDevice != null &&
+                   _bleDevice.Device.ConnectionStatus == BluetoothConnectionStatus.Connected;
+        }
+
+        /// <summary>Reads fresh battery levels from the device and updates internal state.</summary>
+        /// <returns>True on success, false if not connected or read failed.</returns>
+        public async Task<bool> RefreshBatteryLevels()
+        {
+            var readResult = await ReadBatteryLevels();
+            if (readResult.Status == ReadStatus.Success)
+            {
+                _batteries = readResult.Batteries;
+                return true;
+            }
+            return false;
+        }
+
+        private async void OnBLEConnectionStatusChanged(BluetoothLEDevice sender, object args)
+        {
+            if (sender.ConnectionStatus == BluetoothConnectionStatus.Disconnected)
+            {
+                // BLE link dropped (e.g. keyboard switched to USB charging)
+                _deviceNeedsReconnectCb();
+            }
+            else
+            {
+                // BLE link restored – try to refresh readings immediately.
+                // If GATT session is stale a full reconnect will be triggered.
+                var readResult = await ReadBatteryLevels();
+                if (readResult.Status == ReadStatus.Success)
+                {
+                    _batteries = readResult.Batteries;
+                    _batteryLevelChangedCb();
+                }
+                else
+                {
+                    _deviceNeedsReconnectCb();
+                }
+            }
         }
 
         private static string GetBatteryNameFromGC(GattCharacteristic gc)

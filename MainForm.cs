@@ -33,13 +33,15 @@ namespace ZMKSplit
         public static readonly String STATUS_READY = "Ready";
         public static readonly String STATUS_READ_BATTERY_LEVEL_FAILED = "Could not read battery level: {0}";
         public static readonly String STATUS_COULD_NOT_OPEN_REG_KEY = "Could not open registry key: {0}";
-
+        private static readonly string APP_REG_KEY = "SOFTWARE\\ZMKSplitBattery";
+        private static readonly string APP_REG_START_MINIMIZED = "StartMinimized";
         public static readonly int    BATTERY_LOW_LEVEL_THRESHOLD = 20;
         public static readonly string BATTERY_LOW_TIP_TITLE = "Low battery";
         public static readonly string BATTERY_LOW_TIP_MESSAGE = "{0} battery level is below " + BATTERY_LOW_LEVEL_THRESHOLD + "%";
         public static readonly string BATTERY_NOT_CONNECTED_TITLE = "Not Connected";
 
         public static readonly int    RECONNECT_INTERVAL = 300;
+        public static readonly int    RECONNECT_AFTER_DISCONNECT_INTERVAL = 10;
 
         public static readonly string STARTUP_ARG_DEVICE_NAME = "-devicename";
         public static readonly string STARTUP_ARG_DEVICE_ID = "-deviceid";
@@ -52,7 +54,7 @@ namespace ZMKSplit
 
         public MainForm()
         {
-            _batteryMonitor = new BatteryMonitor(OnBatteryLevelChanged);
+            _batteryMonitor = new BatteryMonitor(OnBatteryLevelChanged, OnDeviceNeedsReconnect);
             WindowState = FormWindowState.Minimized;
             ShowInTaskbar = false;
             InitializeComponent();
@@ -68,6 +70,7 @@ namespace ZMKSplit
             ConnectButton.Text = CONNECT_BUTTON_CONNECT;
             ReloadButton.Text = RELOAD_BUTTON_STATE_READY;
             AutoRunCheckBox.Checked = IsAutoRunEnabled();
+            StartMinimizedCheckBox.Checked = IsStartMinimizedEnabled();
 
             ParseCommandLineArguments();
 
@@ -85,8 +88,15 @@ namespace ZMKSplit
             }
             else
             {
-                WindowState = FormWindowState.Normal;
-                ShowInTaskbar = true;
+                if (IsStartMinimizedEnabled())
+                {
+                    BeginInvoke(new Action(() => Hide()));
+                }
+                else
+                {
+                    WindowState = FormWindowState.Normal;
+                    ShowInTaskbar = true;
+                }
                 ListBLEDevices();
             }
         }
@@ -167,6 +177,8 @@ namespace ZMKSplit
                     _deviceID = deviceID;
                     StatusLabel.Text = string.Format(STATUS_CONNECTED, _deviceName);
                     UpdateTrayIcon();
+                    PollingTimer.Interval = (int)RefreshIntervalNumericUpDown.Value * 60 * 1000;
+                    PollingTimer.Start();
                     if (AutoRunCheckBox.Checked)
                     {
                         // refresh credentials stored in registry
@@ -193,6 +205,7 @@ namespace ZMKSplit
 
         private void DisconnectFromSelectedDevice()
         {
+            PollingTimer.Stop();
             _batteryMonitor.Disconnect();
             _deviceName = "";
             _deviceID = "";
@@ -363,6 +376,37 @@ namespace ZMKSplit
             ConnectButton.Enabled = true;
         }
 
+        private void OnDeviceNeedsReconnect()
+        {
+            // Called from BatteryMonitor when the BLE link drops unexpectedly
+            // (e.g. keyboard switched to USB charging mode).
+            BeginInvoke(new Action(() =>
+            {
+                PollingTimer.Stop();
+                UpdateTrayIcon(); // now shows disconnected
+                if (_deviceID.Length > 0 && _deviceName.Length > 0)
+                {
+                    ReconnectTimer.Stop();
+                    _reconnectCounter = RECONNECT_AFTER_DISCONNECT_INTERVAL;
+                    ReconnectTimer.Start();
+                }
+            }));
+        }
+
+        private async void PollingTimer_Tick(object sender, EventArgs e)
+        {
+            if (!_batteryMonitor.IsConnected())
+                return;
+            bool success = await _batteryMonitor.RefreshBatteryLevels();
+            if (success)
+                UpdateTrayIcon();
+        }
+
+        private void RefreshIntervalNumericUpDown_ValueChanged(object sender, EventArgs e)
+        {
+            PollingTimer.Interval = (int)RefreshIntervalNumericUpDown.Value * 60 * 1000;
+        }
+
         private void ExitContextMenuItem_Click(object sender, EventArgs e)
         {
             Application.Exit();
@@ -413,6 +457,30 @@ namespace ZMKSplit
         private void AutoRunCheckBox_CheckedChanged(object sender, EventArgs e)
         {
             SetAutoRunEnabled(AutoRunCheckBox.Checked);
+        }
+
+        private bool IsStartMinimizedEnabled()
+        {
+            var keyOpt = Registry.CurrentUser.OpenSubKey(APP_REG_KEY);
+            if (keyOpt is RegistryKey key)
+            {
+                return key.GetValue(APP_REG_START_MINIMIZED) is int val && val != 0;
+            }
+            return false;
+        }
+
+        private void SetStartMinimizedEnabled(bool enabled)
+        {
+            var keyOpt = Registry.CurrentUser.CreateSubKey(APP_REG_KEY);
+            if (keyOpt is RegistryKey key)
+            {
+                key.SetValue(APP_REG_START_MINIMIZED, enabled ? 1 : 0, RegistryValueKind.DWord);
+            }
+        }
+
+        private void StartMinimizedCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            SetStartMinimizedEnabled(StartMinimizedCheckBox.Checked);
         }
 
         private void NotifyIcon_MouseDoubleClick(object sender, MouseEventArgs e)

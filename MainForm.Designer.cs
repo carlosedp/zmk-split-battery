@@ -41,9 +41,14 @@
             this.StatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.ConnectButton = new System.Windows.Forms.Button();
             this.ReconnectTimer = new System.Windows.Forms.Timer(this.components);
+            this.PollingTimer = new System.Windows.Forms.Timer(this.components);
             this.AutoRunCheckBox = new System.Windows.Forms.CheckBox();
+            this.RefreshIntervalLabel = new System.Windows.Forms.Label();
+            this.RefreshIntervalNumericUpDown = new System.Windows.Forms.NumericUpDown();
+            this.StartMinimizedCheckBox = new System.Windows.Forms.CheckBox();
             this.TrayContextMenu.SuspendLayout();
             this.StatusStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.RefreshIntervalNumericUpDown)).BeginInit();
             this.SuspendLayout();
             // 
             // DevicesListView
@@ -146,6 +151,11 @@
             this.ReconnectTimer.Interval = 1000;
             this.ReconnectTimer.Tick += new System.EventHandler(this.ReconnectTimer_Tick);
             // 
+            // PollingTimer
+            // 
+            this.PollingTimer.Interval = 300000;
+            this.PollingTimer.Tick += new System.EventHandler(this.PollingTimer_Tick);
+            // 
             // AutoRunCheckBox
             // 
             this.AutoRunCheckBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
@@ -158,12 +168,49 @@
             this.AutoRunCheckBox.UseVisualStyleBackColor = true;
             this.AutoRunCheckBox.CheckedChanged += new System.EventHandler(this.AutoRunCheckBox_CheckedChanged);
             // 
+            // RefreshIntervalLabel
+            // 
+            this.RefreshIntervalLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.RefreshIntervalLabel.AutoSize = true;
+            this.RefreshIntervalLabel.Location = new System.Drawing.Point(408, 118);
+            this.RefreshIntervalLabel.Name = "RefreshIntervalLabel";
+            this.RefreshIntervalLabel.Size = new System.Drawing.Size(120, 15);
+            this.RefreshIntervalLabel.TabIndex = 7;
+            this.RefreshIntervalLabel.Text = "Refresh every (min):";
+            // 
+            // RefreshIntervalNumericUpDown
+            // 
+            this.RefreshIntervalNumericUpDown.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.RefreshIntervalNumericUpDown.Location = new System.Drawing.Point(408, 138);
+            this.RefreshIntervalNumericUpDown.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
+            this.RefreshIntervalNumericUpDown.Maximum = new decimal(new int[] { 60, 0, 0, 0 });
+            this.RefreshIntervalNumericUpDown.Value = new decimal(new int[] { 5, 0, 0, 0 });
+            this.RefreshIntervalNumericUpDown.Name = "RefreshIntervalNumericUpDown";
+            this.RefreshIntervalNumericUpDown.Size = new System.Drawing.Size(158, 23);
+            this.RefreshIntervalNumericUpDown.TabIndex = 8;
+            this.RefreshIntervalNumericUpDown.ValueChanged += new System.EventHandler(this.RefreshIntervalNumericUpDown_ValueChanged);
+            // 
+            // StartMinimizedCheckBox
+            // 
+            this.StartMinimizedCheckBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
+            this.StartMinimizedCheckBox.AutoSize = true;
+            this.StartMinimizedCheckBox.Location = new System.Drawing.Point(408, 172);
+            this.StartMinimizedCheckBox.Name = "StartMinimizedCheckBox";
+            this.StartMinimizedCheckBox.Size = new System.Drawing.Size(152, 19);
+            this.StartMinimizedCheckBox.TabIndex = 9;
+            this.StartMinimizedCheckBox.Text = "Start minimized to tray";
+            this.StartMinimizedCheckBox.UseVisualStyleBackColor = true;
+            this.StartMinimizedCheckBox.CheckedChanged += new System.EventHandler(this.StartMinimizedCheckBox_CheckedChanged);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(577, 406);
             this.Controls.Add(this.AutoRunCheckBox);
+            this.Controls.Add(this.RefreshIntervalLabel);
+            this.Controls.Add(this.RefreshIntervalNumericUpDown);
+            this.Controls.Add(this.StartMinimizedCheckBox);
             this.Controls.Add(this.ConnectButton);
             this.Controls.Add(this.StatusStrip1);
             this.Controls.Add(this.ReloadButton);
@@ -176,6 +223,7 @@
             this.TrayContextMenu.ResumeLayout(false);
             this.StatusStrip1.ResumeLayout(false);
             this.StatusStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.RefreshIntervalNumericUpDown)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -194,6 +242,10 @@
         private System.Windows.Forms.ToolStripMenuItem exitContextMenuItem;
         private System.Windows.Forms.ToolStripMenuItem showContextMenuItem;
         private System.Windows.Forms.Timer ReconnectTimer;
+        private System.Windows.Forms.Timer PollingTimer;
         private System.Windows.Forms.CheckBox AutoRunCheckBox;
+        private System.Windows.Forms.Label RefreshIntervalLabel;
+        private System.Windows.Forms.NumericUpDown RefreshIntervalNumericUpDown;
+        private System.Windows.Forms.CheckBox StartMinimizedCheckBox;
     }
 }
