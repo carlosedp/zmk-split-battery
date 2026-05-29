@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Windows.Devices.Enumeration;
@@ -9,7 +10,7 @@ using System.Diagnostics;
 
 namespace ZMKSplit
 {
-    internal class BatteryMonitor
+    internal class BatteryMonitor : IDisposable
     {
         public static readonly Guid BATTERY_UUID = Guid.Parse("{0000180F-0000-1000-8000-00805F9B34FB}");
         public static readonly Guid BATTERY_LEVEL_UUID = Guid.Parse("{00002A19-0000-1000-8000-00805F9B34FB}");
@@ -51,7 +52,7 @@ namespace ZMKSplit
         public struct ReadBatteryLevelResult
         {
             public ReadStatus Status { get; set; }
-            public Dictionary<ushort, BatteryStatus> Batteries { get; set; }
+            public ConcurrentDictionary<ushort, BatteryStatus> Batteries { get; set; }
             public string ErrorMessage { get; set; }
 
             public ReadBatteryLevelResult(ReadStatus status, GattCharacteristic gc, int singleValue) : this(status, "")
@@ -62,7 +63,7 @@ namespace ZMKSplit
             public ReadBatteryLevelResult(ReadStatus status, string errorMessage)
             {
                 Status = status;
-                Batteries = new Dictionary<ushort, BatteryStatus>();
+                Batteries = new ConcurrentDictionary<ushort, BatteryStatus>();
                 ErrorMessage = errorMessage;
             }
         }
@@ -81,12 +82,14 @@ namespace ZMKSplit
             }
         };
 
-        public Dictionary<ushort, BatteryStatus> Batteries { get => _batteries; }
+        public IReadOnlyDictionary<ushort, BatteryStatus> Batteries => _batteries;
 
-        private Dictionary<ushort, BatteryStatus> _batteries = new();
+        private ConcurrentDictionary<ushort, BatteryStatus> _batteries = new();
         private BLEDevice? _bleDevice;
+        private static DeviceWatcher? _deviceWatcher;
         private readonly BatteryLevelChangedCallback _batteryLevelChangedCb;
         private readonly DeviceNeedsReconnectCallback _deviceNeedsReconnectCb;
+        private bool _disposed;
 
         public BatteryMonitor(BatteryLevelChangedCallback levelCb, DeviceNeedsReconnectCallback reconnectCb)
         {
@@ -96,6 +99,13 @@ namespace ZMKSplit
 
         public static void ListPairedDevices(ListDevicesCallback cb, ListDevicesCompletionCallback completionCB)
         {
+            // Stop and discard any previous watcher to avoid leaks on rapid refreshes.
+            if (_deviceWatcher != null)
+            {
+                try { _deviceWatcher.Stop(); } catch { }
+                _deviceWatcher = null;
+            }
+
             string aqsFilter = "(System.Devices.Aep.ProtocolId:=\"{bb7bb05e-5972-42b5-94fc-76eaa7084d49}\")";
             string[] bleAdditionalProperties =
             {
@@ -103,24 +113,25 @@ namespace ZMKSplit
                 "System.Devices.Aep.Bluetooth.Le.IsConnectable",
             };
 
-            DeviceWatcher watcher = DeviceInformation.CreateWatcher(aqsFilter, bleAdditionalProperties, DeviceInformationKind.AssociationEndpoint);
-            watcher.Added += (DeviceWatcher deviceWatcher, DeviceInformation di) =>
+            _deviceWatcher = DeviceInformation.CreateWatcher(aqsFilter, bleAdditionalProperties, DeviceInformationKind.AssociationEndpoint);
+            _deviceWatcher.Added += (DeviceWatcher deviceWatcher, DeviceInformation di) =>
             {
                 if (di.Pairing.IsPaired && !String.IsNullOrWhiteSpace(di.Name))
                 {
                     cb(di.Name, di.Id);
                 }
             };
-            watcher.Updated += (_, __) => { };
-            watcher.EnumerationCompleted += (DeviceWatcher deviceWatcher, object arg) =>
+            _deviceWatcher.Updated += (_, __) => { };
+            _deviceWatcher.EnumerationCompleted += (DeviceWatcher deviceWatcher, object arg) =>
             {
                 deviceWatcher.Stop();
             };
-            watcher.Stopped += (DeviceWatcher deviceWatcher, object arg) =>
+            _deviceWatcher.Stopped += (DeviceWatcher deviceWatcher, object arg) =>
             {
+                _deviceWatcher = null;
                 completionCB();
             };
-            watcher.Start();
+            _deviceWatcher.Start();
         }
 
         public async Task<ConnectResult> Connect(string deviceName, string deviceID)
@@ -147,7 +158,8 @@ namespace ZMKSplit
                 for (int i = 0; i < gattServices.Services.Count; i++)
                 {
                     var gattService = gattServices.Services[i];
-                    var gattCharacteristics = await gattService.GetCharacteristicsForUuidAsync(BATTERY_LEVEL_UUID, BluetoothCacheMode.Uncached);
+                    using var gattCharacteristics = await gattService.GetCharacteristicsForUuidAsync(BATTERY_LEVEL_UUID, BluetoothCacheMode.Uncached);
+                    gattService.Dispose();
 
                     foreach (var gc in gattCharacteristics!.Characteristics)
                     {
@@ -168,7 +180,8 @@ namespace ZMKSplit
                     var readResult = await ReadBatteryLevels();
                     if (readResult.Status == ReadStatus.Success)
                     {
-                        _batteries = readResult.Batteries;
+                        foreach (var kv in readResult.Batteries)
+                            _batteries[kv.Key] = kv.Value;
                     }
 
                     return new ConnectResult { Status = ConnectStatus.Connected };
@@ -203,6 +216,18 @@ namespace ZMKSplit
             }
         }
 
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            Disconnect();
+            if (_deviceWatcher != null)
+            {
+                try { _deviceWatcher.Stop(); } catch { }
+                _deviceWatcher = null;
+            }
+        }
+
         public bool IsConnected()
         {
             return _bleDevice != null &&
@@ -216,7 +241,8 @@ namespace ZMKSplit
             var readResult = await ReadBatteryLevels();
             if (readResult.Status == ReadStatus.Success)
             {
-                _batteries = readResult.Batteries;
+                foreach (var kv in readResult.Batteries)
+                    _batteries[kv.Key] = kv.Value;
                 return true;
             }
             return false;
@@ -236,7 +262,8 @@ namespace ZMKSplit
                 var readResult = await ReadBatteryLevels();
                 if (readResult.Status == ReadStatus.Success)
                 {
-                    _batteries = readResult.Batteries;
+                    foreach (var kv in readResult.Batteries)
+                        _batteries[kv.Key] = kv.Value;
                     _batteryLevelChangedCb();
                 }
                 else
@@ -288,7 +315,7 @@ namespace ZMKSplit
         public async Task<ReadBatteryLevelResult> ReadBatteryLevels()
         {
             if (_bleDevice == null)
-                return new ReadBatteryLevelResult { Status = ReadStatus.NotConnected }; ;
+                return new ReadBatteryLevelResult { Status = ReadStatus.NotConnected, Batteries = new ConcurrentDictionary<ushort, BatteryStatus>() };
 
             var bleDev = _bleDevice;
             var overalResult = new ReadBatteryLevelResult(ReadStatus.Success, "");
@@ -302,7 +329,7 @@ namespace ZMKSplit
             return overalResult;
         }
 
-        public void OnGattValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
+        private void OnGattValueChanged(GattCharacteristic sender, GattValueChangedEventArgs args)
         {
             byte[] data = new byte[args.CharacteristicValue.Length];
             DataReader.FromBuffer(args.CharacteristicValue).ReadBytes(data);

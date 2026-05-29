@@ -11,6 +11,7 @@ Once one of the batteries level falls below 20% a toast notification is shown.
 Dark/Light taskbar themes supported.
 
 Requirements:
+
 - Windows 10.0.19041 and above.
 - .NET Desktop Runtime 9.0
 
@@ -24,6 +25,7 @@ dotnet build --configuration Release
 ```
 
 Or using MSBuild:
+
 ```bash
 msbuild ZMKSplit.sln /p:Configuration=Release /p:Platform="Any CPU"
 ```
