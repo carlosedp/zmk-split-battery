@@ -17,7 +17,13 @@ Requirements:
 
 ## Building
 
-This project uses .NET 9.0 and can be built using:
+Install .NET 9.0 if not installed:
+
+```bash
+winget install Microsoft.DotNet.SDK.9
+```
+
+Then build on PowerShell with:
 
 ```bash
 dotnet restore
@@ -35,11 +41,14 @@ msbuild ZMKSplit.sln /p:Configuration=Release /p:Platform="Any CPU"
 The project includes a GitHub Actions workflow that automatically builds the application on every push to any branch and creates releases when you push version tags.
 
 **To create a release:**
+
 1. Create and push a version tag (e.g., `v1.0`):
+
    ```bash
    git tag v1.0
    git push origin v1.0
    ```
+
 2. The workflow will automatically:
    - Build the Release configuration
    - Create a ZIP file with the compiled application
@@ -47,12 +56,13 @@ The project includes a GitHub Actions workflow that automatically builds the app
    - Generate release notes from recent commits
 
 The workflow:
+
 - Builds both on feature branches (for testing) and on version tags (for releases)
 - Uses .NET 9.0 SDK and MSBuild for Windows-specific dependencies
 - Creates downloadable artifacts for every build
 - Runs on Windows runners to ensure compatibility with Windows Runtime APIs
 
-## Screenshots:
+## Screenshots
 
 ![Screenshots](Screenshots/app-preview-top.png)
 ![Screenshots](Screenshots/app-preview-bottom-light.png)

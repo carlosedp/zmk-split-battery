@@ -32,7 +32,6 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.DevicesListView = new System.Windows.Forms.ListView();
             this.NameColumn = new System.Windows.Forms.ColumnHeader();
-            this.ConnectedColumn = new System.Windows.Forms.ColumnHeader();
             this.NotifyIcon = new System.Windows.Forms.NotifyIcon(this.components);
             this.TrayContextMenu = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.showContextMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -65,8 +64,7 @@
             | System.Windows.Forms.AnchorStyles.Left)
             | System.Windows.Forms.AnchorStyles.Right)));
             this.DevicesListView.Columns.AddRange(new System.Windows.Forms.ColumnHeader[] {
-            this.NameColumn,
-            this.ConnectedColumn});
+            this.NameColumn});
             this.DevicesListView.FullRowSelect = true;
             this.DevicesListView.GridLines = true;
             this.DevicesListView.HeaderStyle = System.Windows.Forms.ColumnHeaderStyle.Nonclickable;
@@ -80,18 +78,13 @@
             this.DevicesListView.UseCompatibleStateImageBehavior = false;
             this.DevicesListView.View = System.Windows.Forms.View.Details;
             this.DevicesListView.DoubleClick += new System.EventHandler(this.DevicesListView_DoubleClick);
+            this.DevicesListView.Resize += new System.EventHandler(this.DevicesListView_Resize);
             this.DevicesListView.SelectedIndexChanged += new System.EventHandler(this.DevicesListView_SelectedIndexChanged);
             //
             // NameColumn
             //
-            this.NameColumn.Text = "Name";
-            this.NameColumn.Width = 295;
-            //
-            // ConnectedColumn
-            //
-            this.ConnectedColumn.Text = "Connected";
-            this.ConnectedColumn.Width = 75;
-            this.ConnectedColumn.TextAlign = System.Windows.Forms.HorizontalAlignment.Center;
+            this.NameColumn.Text = "";
+            this.NameColumn.Width = 200;
             //
             // NotifyIcon
             //
@@ -315,7 +308,6 @@
         private System.Windows.Forms.Button ReloadButton;
         private System.Windows.Forms.Button RefreshBatteryButton;
         private System.Windows.Forms.ColumnHeader NameColumn;
-        private System.Windows.Forms.ColumnHeader ConnectedColumn;
         private System.Windows.Forms.StatusStrip StatusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel StatusLabel;
         private System.Windows.Forms.ToolStripStatusLabel LastUpdatedLabel;
